@@ -81,5 +81,11 @@
     <Image Include="..\..\..\Downloads\dartboard.png">
       <Filter>Pliki źródłowe</Filter>
     </Image>
+    <Image Include="..\..\..\Downloads\wall.png">
+      <Filter>Pliki źródłowe</Filter>
+    </Image>
+    <Image Include="..\..\..\Downloads\dartboard-no-back.png">
+      <Filter>Pliki źródłowe</Filter>
+    </Image>
   </ItemGroup>
 </Project>
