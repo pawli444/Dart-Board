@@ -133,6 +133,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Dart.cpp" />
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
@@ -145,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="aAAAAAAAAAAAAAAAAAAAAAAAA.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Dart.h" />
     <ClInclude Include="EBO.h" />
     <ClInclude Include="shaderClass.h" />
     <ClInclude Include="stb_image.h" />
