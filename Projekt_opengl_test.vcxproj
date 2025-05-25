@@ -158,6 +158,8 @@
   <ItemGroup>
     <None Include="default.frag" />
     <None Include="default.vert" />
+    <None Include="Light.frag" />
+    <None Include="Light.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\Downloads\dartboard-no-back.png" />
