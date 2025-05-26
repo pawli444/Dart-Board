@@ -17,7 +17,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
 const double M_PI = 3.14159265358979323846;
 
-Camera camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 12.0f));
 float scale = 1.0f;
 
 void processInput(GLFWwindow* window)
@@ -163,11 +163,14 @@ int main() {
     unsigned int indexCount = static_cast<unsigned int>(dartboardIndices.size());
 
     unsigned int texDartboard = loadTexture("dartboard.png");
-    unsigned int texWall = loadTexture("wall.png");
+    unsigned int texWall = loadTexture("wall.png"); // œciana z tarcz¹ i naprzeciwko
+    unsigned int texWallSide = loadTexture("sciana_drewno.png"); // boczne œciany i sufit
+    unsigned int texCarpet = loadTexture("podloga_dywan.png");
+    unsigned int texKomoda = loadTexture("komoda.jpg");
 
     // Œciana
     float wallDepth = 0.1f;
-    float wallSize = 5.0f;
+    float wallSize = 7.0f; // lub tyle, ile wynosi roomW
     float wallVerts[] = {
         // Pozycje                   // Tekstury   // Normalne
         // Przednia strona
@@ -206,6 +209,105 @@ int main() {
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    // --- Pokój (prostopad³oœcian) ---
+    float roomW = 7.0f, roomH = 3.0f, roomD = 15.0f;
+    float roomVerts[] = {
+        // Pod³oga (y = -roomH)
+        -roomW, -roomH, -roomD,  0.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+         roomW, -roomH, -roomD,  1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
+         roomW, -roomH,  roomD,  1.0f, 1.0f,  0.0f, 1.0f, 0.0f,
+        -roomW, -roomH,  roomD,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
+        // Sufit (y = +roomH)
+        -roomW,  roomH, -roomD,  0.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+         roomW,  roomH, -roomD,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
+         roomW,  roomH,  roomD,  1.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+        -roomW,  roomH,  roomD,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
+        // Œciana tylna (z = -roomD)
+        -roomW, -roomH, -roomD,  0.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+         roomW, -roomH, -roomD,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f,
+         roomW,  roomH, -roomD,  1.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+        -roomW,  roomH, -roomD,  0.0f, 1.0f,  0.0f, 0.0f, 1.0f,
+        // Œciana przednia (z = +roomD)
+        -roomW, -roomH,  roomD,  0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+         roomW, -roomH,  roomD,  1.0f, 0.0f,  0.0f, 0.0f, -1.0f,
+         roomW,  roomH,  roomD,  1.0f, 1.0f,  0.0f, 0.0f, -1.0f,
+        -roomW,  roomH,  roomD,  0.0f, 1.0f,  0.0f, 0.0f, -1.0f,
+        // Œciana lewa (x = -roomW)
+        -roomW, -roomH, -roomD,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+        -roomW, -roomH,  roomD,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
+        -roomW,  roomH,  roomD,  1.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+        -roomW,  roomH, -roomD,  0.0f, 1.0f,  1.0f, 0.0f, 0.0f,
+        // Œciana prawa (x = +roomW)
+         roomW, -roomH, -roomD,  0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+         roomW, -roomH,  roomD,  1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
+         roomW,  roomH,  roomD,  1.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+         roomW,  roomH, -roomD,  0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+    };
+    unsigned int roomIdx[] = {
+        // Pod³oga
+        0, 1, 2, 2, 3, 0,
+        // Sufit
+        4, 5, 6, 6, 7, 4,
+        // Tylna
+        8, 9,10,10,11, 8,
+        // Przednia
+       12,13,14,14,15,12,
+        // Lewa
+       16,17,18,18,19,16,
+        // Prawa
+       20,21,22,22,23,20
+    };
+    unsigned int roomVAO, roomVBO, roomEBO;
+    glGenVertexArrays(1, &roomVAO);
+    glGenBuffers(1, &roomVBO);
+    glGenBuffers(1, &roomEBO);
+    glBindVertexArray(roomVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, roomVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(roomVerts), roomVerts, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, roomEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(roomIdx), roomIdx, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    // Komoda
+    float komodaW = 4.0f, komodaH = 2.0f, komodaD = 2.0f;
+    float komodaVerts[] = {
+        // pozycje           // tekstury
+        -komodaW/2, -roomH, -komodaD/2, 0.0f, 0.0f,
+         komodaW/2, -roomH, -komodaD/2, 1.0f, 0.0f,
+         komodaW/2, -roomH+komodaH, -komodaD/2, 1.0f, 1.0f,
+        -komodaW/2, -roomH+komodaH, -komodaD/2, 0.0f, 1.0f,
+        -komodaW/2, -roomH, komodaD/2, 0.0f, 0.0f,
+         komodaW/2, -roomH, komodaD/2, 1.0f, 0.0f,
+         komodaW/2, -roomH+komodaH, komodaD/2, 1.0f, 1.0f,
+        -komodaW/2, -roomH+komodaH, komodaD/2, 0.0f, 1.0f,
+    };
+    unsigned int komodaIdx[] = {
+        0,1,2, 2,3,0, // ty³
+        4,5,6, 6,7,4, // przód
+        0,1,5, 5,4,0, // dó³
+        2,3,7, 7,6,2, // góra
+        0,3,7, 7,4,0, // lewo
+        1,2,6, 6,5,1  // prawo
+    };
+    unsigned int komodaVAO, komodaVBO, komodaEBO;
+    glGenVertexArrays(1, &komodaVAO);
+    glGenBuffers(1, &komodaVBO);
+    glGenBuffers(1, &komodaEBO);
+    glBindVertexArray(komodaVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, komodaVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(komodaVerts), komodaVerts, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, komodaEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(komodaIdx), komodaIdx, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
     // Œwiat³o
     float cubeVertices[] = {
         -0.5f, -0.5f, -0.5f,
@@ -240,6 +342,10 @@ int main() {
     glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
     glm::vec3 lightColor = glm::vec3(1.0f);
 
+    // Dodaj przed pêtl¹ g³ówn¹ (np. obok lightPos)
+    glm::vec3 endrodLight1 = glm::vec3(7.0f, 2.0f, 6.0f);
+    glm::vec3 endrodLight2 = glm::vec3(-7.0f, 2.0f, 6.0f);
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         processInput(window);
@@ -257,12 +363,57 @@ int main() {
         glBindVertexArray(lightVAO);
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
-        // Renderowanie sceny
+        // Renderowanie endrodów jako œwiat³a (np. jako bia³e pod³u¿ne prostopad³oœciany)
+        lightShader.Activate();
+        glm::mat4 endrodModel1 = glm::mat4(1.0f);
+        endrodModel1 = glm::translate(endrodModel1, endrodLight1);
+        endrodModel1 = glm::scale(endrodModel1, glm::vec3(0.2f, 1.0f, 0.2f)); // pod³u¿ny prêt
+        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(endrodModel1));
+        camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
+        glBindVertexArray(lightVAO);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+        glm::mat4 endrodModel2 = glm::mat4(1.0f);
+        endrodModel2 = glm::translate(endrodModel2, endrodLight2);
+        endrodModel2 = glm::scale(endrodModel2, glm::vec3(0.2f, 1.0f, 0.2f));
+        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(endrodModel2));
+        camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
+        glBindVertexArray(lightVAO);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+        // Renderowanie pokoju (œcian, pod³ogi, sufitu)
         shader.Activate();
         camera.Matrix(45.0f, 0.1f, 100.0f, shader, "cameraMatrix");
         glUniform3fv(glGetUniformLocation(shader.ID, "lightPos"), 1, glm::value_ptr(lightPos));
         glUniform3fv(glGetUniformLocation(shader.ID, "viewPos"), 1, glm::value_ptr(camera.Position));
         glUniform3fv(glGetUniformLocation(shader.ID, "lightColor"), 1, glm::value_ptr(lightColor));
+        glm::mat4 roomM = glm::mat4(1.0f);
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(roomM));
+        glBindVertexArray(roomVAO);
+
+        // Pod³oga (indeksy 0-5) - dywan
+        glBindTexture(GL_TEXTURE_2D, texCarpet);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+
+        // Sufit (indeksy 6-11) - drewno
+        glBindTexture(GL_TEXTURE_2D, texWallSide);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
+
+        // Œciana tylna (indeksy 12-17) - wall.jpg
+        glBindTexture(GL_TEXTURE_2D, texWall);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(12 * sizeof(unsigned int)));
+
+        // Œciana przednia (indeksy 18-23) - wall.jpg
+        glBindTexture(GL_TEXTURE_2D, texWall);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(18 * sizeof(unsigned int)));
+
+        // Œciana lewa (indeksy 24-29) - drewno
+        glBindTexture(GL_TEXTURE_2D, texWallSide);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(24 * sizeof(unsigned int)));
+
+        // Œciana prawa (indeksy 30-35) - drewno
+        glBindTexture(GL_TEXTURE_2D, texWallSide);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(30 * sizeof(unsigned int)));
 
         // Renderowanie œciany
         glm::mat4 wallM = glm::mat4(1.0f);
@@ -280,6 +431,19 @@ int main() {
         glBindVertexArray(dartVAO);
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 
+        // Renderowanie komody
+        shader.Activate();
+        glm::mat4 komodaModel = glm::mat4(1.0f);
+        // Ustaw komodê na (12.0f, 0.0f,6.0f)
+        komodaModel = glm::translate(
+            komodaModel,
+            glm::vec3(6.0f, 0.0f, 0.0f)
+        );
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(komodaModel));
+        glBindTexture(GL_TEXTURE_2D, texKomoda);
+        glBindVertexArray(komodaVAO);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
         glfwSwapBuffers(window);
     }
 
@@ -289,6 +453,12 @@ int main() {
     glDeleteVertexArrays(1, &wallVAO);
     glDeleteBuffers(1, &wallVBO);
     glDeleteBuffers(1, &wallEBO);
+    glDeleteVertexArrays(1, &roomVAO);
+    glDeleteBuffers(1, &roomVBO);
+    glDeleteBuffers(1, &roomEBO);
+    glDeleteVertexArrays(1, &komodaVAO);
+    glDeleteBuffers(1, &komodaVBO);
+    glDeleteBuffers(1, &komodaEBO);
     glDeleteVertexArrays(1, &lightVAO);
     glDeleteBuffers(1, &lightVBO);
     glDeleteBuffers(1, &lightEBO);
