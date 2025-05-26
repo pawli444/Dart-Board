@@ -42,6 +42,9 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Pliki źródłowe</Filter>
     </ClCompile>
+    <ClCompile Include="Dart.cpp">
+      <Filter>Pliki źródłowe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EBO.h">
@@ -68,6 +71,9 @@
     <ClInclude Include="Texture.h">
       <Filter>Pliki źródłowe</Filter>
     </ClInclude>
+    <ClInclude Include="Dart.h">
+      <Filter>Pliki nagłówkowe</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="default.frag">
@@ -76,16 +82,21 @@
     <None Include="default.vert">
       <Filter>Pliki źródłowe</Filter>
     </None>
+    <None Include="Light.frag" />
+    <None Include="Light.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\Downloads\dartboard.png">
       <Filter>Pliki źródłowe</Filter>
     </Image>
-    <Image Include="..\..\..\Downloads\wall.png">
-      <Filter>Pliki źródłowe</Filter>
-    </Image>
     <Image Include="..\..\..\Downloads\dartboard-no-back.png">
       <Filter>Pliki źródłowe</Filter>
+    </Image>
+    <Image Include="..\..\..\Downloads\sciana_drewno.png">
+      <Filter>Pliki zasobów</Filter>
+    </Image>
+    <Image Include="..\opengel\opengel\wall.jpg">
+      <Filter>Pliki zasobów</Filter>
     </Image>
   </ItemGroup>
 </Project>

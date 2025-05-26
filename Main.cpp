@@ -68,22 +68,20 @@ int main() {
     glfwMakeContextCurrent(window);
     gladLoadGL();
     glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE); // Wy³¹czamy culling, aby renderowaæ obie strony
+    glDisable(GL_CULL_FACE); // renderowanie obu stron
 
     Shader shader("default.vert", "default.frag");
     Shader lightShader("Light.vert", "Light.frag");
     shader.Activate();
     shader.setInt("texture1", 0);
 
-    // --- Generowanie tarczy 3D
+    // --- Generowanie tarczy 3D ---
     const unsigned int segments = 64;
     const float radius = 0.5f;
     const float thickness = 0.05f;
-
     std::vector<float> dartboardVertices;
     std::vector<unsigned int> dartboardIndices;
 
-    // Wierzcho³ki i indeksy
     for (unsigned int i = 0; i <= segments; ++i) {
         float angle = 2.0f * static_cast<float>(M_PI) * i / segments;
         float x = cos(angle) * radius;
@@ -91,34 +89,33 @@ int main() {
 
         // Przednia strona (z tekstur¹)
         dartboardVertices.insert(dartboardVertices.end(), {
-            x, y, thickness / 2.0f,               // Pozycja
+            x, y, thickness / 2.0f,               // pozycja
             (x / radius + 1.0f) / 2.0f,           // Tekstura U
             (y / radius + 1.0f) / 2.0f,           // Tekstura V
-            0.0f, 0.0f, 1.0f                      // Normalna
+            0.0f, 0.0f, 1.0f                     // normalna
             });
 
         // Tylna strona (bez tekstury)
         dartboardVertices.insert(dartboardVertices.end(), {
-            x, y, -thickness / 2.0f,              // Pozycja
-            0.0f, 0.0f,                           // Tekstura (nieu¿ywane)
-            0.0f, 0.0f, -1.0f                     // Normalna
+            x, y, -thickness / 2.0f,              // pozycja
+            0.0f, 0.0f,                         // tekstura (nieu¿ywane)
+            0.0f, 0.0f, -1.0f                   // normalna
             });
     }
 
     unsigned int frontCenterIndex = static_cast<unsigned int>(dartboardVertices.size() / 8);
     dartboardVertices.insert(dartboardVertices.end(), {
-        0.0f, 0.0f, thickness / 2.0f,   // Pozycja
-        0.5f, 0.5f,                     // Tekstura
-        0.0f, 0.0f, 1.0f                // Normalna
+        0.0f, 0.0f, thickness / 2.0f, // pozycja
+        0.5f, 0.5f,                  // tekstura
+        0.0f, 0.0f, 1.0f             // normalna
         });
     unsigned int backCenterIndex = static_cast<unsigned int>(dartboardVertices.size() / 8);
     dartboardVertices.insert(dartboardVertices.end(), {
-        0.0f, 0.0f, -thickness / 2.0f,  // Pozycja
-        0.0f, 0.0f,                     // Tekstura (nieu¿ywane)
-        0.0f, 0.0f, -1.0f               // Normalna
+        0.0f, 0.0f, -thickness / 2.0f, // pozycja
+        0.0f, 0.0f,                  // tekstura (nieu¿ywane)
+        0.0f, 0.0f, -1.0f            // normalna
         });
 
-    // Indeksy
     for (unsigned int i = 0; i < segments; ++i) {
         unsigned int idx = i * 2;
         unsigned int nextIdx = (idx + 2) % ((segments + 1) * 2);
@@ -140,7 +137,6 @@ int main() {
             });
     }
 
-    // VAO dla tarczy
     unsigned int dartVAO, dartVBO, dartEBO;
     glGenVertexArrays(1, &dartVAO);
     glGenBuffers(1, &dartVBO);
@@ -150,44 +146,38 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, dartboardVertices.size() * sizeof(float), dartboardVertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, dartEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, dartboardIndices.size() * sizeof(unsigned int), dartboardIndices.data(), GL_STATIC_DRAW);
-    // Pozycje
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // Tekstury
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Normalne
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
-
     unsigned int indexCount = static_cast<unsigned int>(dartboardIndices.size());
 
     unsigned int texDartboard = loadTexture("dartboard.png");
-    unsigned int texWall = loadTexture("wall.png"); // œciana z tarcz¹ i naprzeciwko
-    unsigned int texWallSide = loadTexture("sciana_drewno.png"); // boczne œciany i sufit
+    unsigned int texWall = loadTexture("wall.png");
+    unsigned int texWallSide = loadTexture("sciana_drewno.png");
     unsigned int texCarpet = loadTexture("podloga_dywan.png");
     unsigned int texKomoda = loadTexture("komoda.jpg");
+    unsigned int texKomodaFront = loadTexture("przod_komody.png");
 
     // Œciana
     float wallDepth = 0.1f;
-    float wallSize = 7.0f; // lub tyle, ile wynosi roomW
+    float wallSize = 7.0f;
     float wallVerts[] = {
-        // Pozycje                   // Tekstury   // Normalne
         // Przednia strona
-        -wallSize, -wallSize, -wallDepth, 0.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-         wallSize, -wallSize, -wallDepth, 1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
-         wallSize,  wallSize, -wallDepth, 1.0f, 1.0f,  0.0f,  0.0f, 1.0f,
-        -wallSize,  wallSize, -wallDepth, 0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+        -wallSize, -wallSize, -wallDepth, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+         wallSize, -wallSize, -wallDepth, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+         wallSize,  wallSize, -wallDepth, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -wallSize,  wallSize, -wallDepth, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
         // Tylna strona
-        -wallSize, -wallSize, -wallDepth, 0.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-         wallSize, -wallSize, -wallDepth, 1.0f, 0.0f,  0.0f,  0.0f, -1.0f,
-         wallSize,  wallSize, -wallDepth, 1.0f, 1.0f,  0.0f,  0.0f, -1.0f,
-        -wallSize,  wallSize, -wallDepth, 0.0f, 1.0f,  0.0f,  0.0f, -1.0f,
+        -wallSize, -wallSize, -wallDepth, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+         wallSize, -wallSize, -wallDepth, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+         wallSize,  wallSize, -wallDepth, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,
+        -wallSize,  wallSize, -wallDepth, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f,
     };
     unsigned int wallIdx[] = {
-        // Przednia strona
         0u, 1u, 2u, 2u, 3u, 0u,
-        // Tylna strona
         4u, 7u, 6u, 6u, 5u, 4u
     };
     unsigned int wallVAO, wallVBO, wallEBO;
@@ -199,62 +189,53 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(wallVerts), wallVerts, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, wallEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(wallIdx), wallIdx, GL_STATIC_DRAW);
-    // Pozycje
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // Tekstury
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
-    // Normalne
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
     // --- Pokój (prostopad³oœcian) ---
     float roomW = 7.0f, roomH = 3.0f, roomD = 15.0f;
     float roomVerts[] = {
-        // Pod³oga (y = -roomH)
-        -roomW, -roomH, -roomD,  0.0f, 0.0f,  0.0f, 1.0f, 0.0f,
-         roomW, -roomH, -roomD,  1.0f, 0.0f,  0.0f, 1.0f, 0.0f,
-         roomW, -roomH,  roomD,  1.0f, 1.0f,  0.0f, 1.0f, 0.0f,
-        -roomW, -roomH,  roomD,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,
-        // Sufit (y = +roomH)
-        -roomW,  roomH, -roomD,  0.0f, 0.0f,  0.0f, -1.0f, 0.0f,
-         roomW,  roomH, -roomD,  1.0f, 0.0f,  0.0f, -1.0f, 0.0f,
-         roomW,  roomH,  roomD,  1.0f, 1.0f,  0.0f, -1.0f, 0.0f,
-        -roomW,  roomH,  roomD,  0.0f, 1.0f,  0.0f, -1.0f, 0.0f,
-        // Œciana tylna (z = -roomD)
-        -roomW, -roomH, -roomD,  0.0f, 0.0f,  0.0f, 0.0f, 1.0f,
-         roomW, -roomH, -roomD,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f,
-         roomW,  roomH, -roomD,  1.0f, 1.0f,  0.0f, 0.0f, 1.0f,
-        -roomW,  roomH, -roomD,  0.0f, 1.0f,  0.0f, 0.0f, 1.0f,
-        // Œciana przednia (z = +roomD)
-        -roomW, -roomH,  roomD,  0.0f, 0.0f,  0.0f, 0.0f, -1.0f,
-         roomW, -roomH,  roomD,  1.0f, 0.0f,  0.0f, 0.0f, -1.0f,
-         roomW,  roomH,  roomD,  1.0f, 1.0f,  0.0f, 0.0f, -1.0f,
-        -roomW,  roomH,  roomD,  0.0f, 1.0f,  0.0f, 0.0f, -1.0f,
-        // Œciana lewa (x = -roomW)
-        -roomW, -roomH, -roomD,  0.0f, 0.0f,  1.0f, 0.0f, 0.0f,
-        -roomW, -roomH,  roomD,  1.0f, 0.0f,  1.0f, 0.0f, 0.0f,
-        -roomW,  roomH,  roomD,  1.0f, 1.0f,  1.0f, 0.0f, 0.0f,
-        -roomW,  roomH, -roomD,  0.0f, 1.0f,  1.0f, 0.0f, 0.0f,
-        // Œciana prawa (x = +roomW)
-         roomW, -roomH, -roomD,  0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
-         roomW, -roomH,  roomD,  1.0f, 0.0f,  -1.0f, 0.0f, 0.0f,
-         roomW,  roomH,  roomD,  1.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
-         roomW,  roomH, -roomD,  0.0f, 1.0f,  -1.0f, 0.0f, 0.0f,
+        // Pod³oga
+        -roomW, -roomH, -roomD,  0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+         roomW, -roomH, -roomD,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+         roomW, -roomH,  roomD,  1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        -roomW, -roomH,  roomD,  0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        // Sufit
+        -roomW,  roomH, -roomD,  0.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+         roomW,  roomH, -roomD,  1.0f, 0.0f, 0.0f, -1.0f, 0.0f,
+         roomW,  roomH,  roomD,  1.0f, 1.0f, 0.0f, -1.0f, 0.0f,
+        -roomW,  roomH,  roomD,  0.0f, 1.0f, 0.0f, -1.0f, 0.0f,
+        // Œciana tylna
+        -roomW, -roomH, -roomD,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+         roomW, -roomH, -roomD,  1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+         roomW,  roomH, -roomD,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -roomW,  roomH, -roomD,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        // Œciana przednia
+        -roomW, -roomH,  roomD,  0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+         roomW, -roomH,  roomD,  1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+         roomW,  roomH,  roomD,  1.0f, 1.0f, 0.0f, 0.0f, -1.0f,
+        -roomW,  roomH,  roomD,  0.0f, 1.0f, 0.0f, 0.0f, -1.0f,
+        // Œciana lewa
+        -roomW, -roomH, -roomD,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        -roomW, -roomH,  roomD,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        -roomW,  roomH,  roomD,  1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+        -roomW,  roomH, -roomD,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+        // Œciana prawa
+         roomW, -roomH, -roomD,  0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+         roomW, -roomH,  roomD,  1.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+         roomW,  roomH,  roomD,  1.0f, 1.0f, -1.0f, 0.0f, 0.0f,
+         roomW,  roomH, -roomD,  0.0f, 1.0f, -1.0f, 0.0f, 0.0f,
     };
     unsigned int roomIdx[] = {
-        // Pod³oga
         0, 1, 2, 2, 3, 0,
-        // Sufit
         4, 5, 6, 6, 7, 4,
-        // Tylna
         8, 9,10,10,11, 8,
-        // Przednia
        12,13,14,14,15,12,
-        // Lewa
        16,17,18,18,19,16,
-        // Prawa
        20,21,22,22,23,20
     };
     unsigned int roomVAO, roomVBO, roomEBO;
@@ -274,25 +255,24 @@ int main() {
     glEnableVertexAttribArray(2);
 
     // Komoda
-    float komodaW = 4.0f, komodaH = 2.0f, komodaD = 2.0f;
+    float komodaW = 4.0f, komodaH = 2.0f, komodaD = 1.0f;
     float komodaVerts[] = {
-        // pozycje           // tekstury
-        -komodaW/2, -roomH, -komodaD/2, 0.0f, 0.0f,
-         komodaW/2, -roomH, -komodaD/2, 1.0f, 0.0f,
-         komodaW/2, -roomH+komodaH, -komodaD/2, 1.0f, 1.0f,
-        -komodaW/2, -roomH+komodaH, -komodaD/2, 0.0f, 1.0f,
-        -komodaW/2, -roomH, komodaD/2, 0.0f, 0.0f,
-         komodaW/2, -roomH, komodaD/2, 1.0f, 0.0f,
-         komodaW/2, -roomH+komodaH, komodaD/2, 1.0f, 1.0f,
-        -komodaW/2, -roomH+komodaH, komodaD/2, 0.0f, 1.0f,
+        -komodaW / 2, -roomH, -komodaD / 2, 0.0f, 0.0f,
+         komodaW / 2, -roomH, -komodaD / 2, 1.0f, 0.0f,
+         komodaW / 2, -roomH + komodaH, -komodaD / 2, 1.0f, 1.0f,
+        -komodaW / 2, -roomH + komodaH, -komodaD / 2, 0.0f, 1.0f,
+        -komodaW / 2, -roomH,  komodaD / 2, 0.0f, 0.0f,
+         komodaW / 2, -roomH,  komodaD / 2, 1.0f, 0.0f,
+         komodaW / 2, -roomH + komodaH,  komodaD / 2, 1.0f, 1.0f,
+        -komodaW / 2, -roomH + komodaH,  komodaD / 2, 0.0f, 1.0f,
     };
     unsigned int komodaIdx[] = {
-        0,1,2, 2,3,0, // ty³
-        4,5,6, 6,7,4, // przód
-        0,1,5, 5,4,0, // dó³
-        2,3,7, 7,6,2, // góra
-        0,3,7, 7,4,0, // lewo
-        1,2,6, 6,5,1  // prawo
+        0,1,2, 2,3,0,
+        4,5,6, 6,7,4,
+        0,1,5, 5,4,0,
+        2,3,7, 7,6,2,
+        0,3,7, 7,4,0,
+        1,2,6, 6,5,1
     };
     unsigned int komodaVAO, komodaVBO, komodaEBO;
     glGenVertexArrays(1, &komodaVAO);
@@ -308,7 +288,7 @@ int main() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // Œwiat³o
+    // Œwiat³o (szeœcian)
     float cubeVertices[] = {
         -0.5f, -0.5f, -0.5f,
          0.5f, -0.5f, -0.5f,
@@ -320,12 +300,12 @@ int main() {
         -0.5f,  0.5f,  0.5f
     };
     unsigned int cubeIndices[] = {
-        0u, 1u, 2u, 2u, 3u, 0u, // Ty³
-        4u, 5u, 6u, 6u, 7u, 4u, // Przód
-        0u, 1u, 5u, 5u, 4u, 0u, // Dó³
-        2u, 3u, 7u, 7u, 6u, 2u, // Góra
-        0u, 3u, 7u, 7u, 4u, 0u, // Lewo
-        1u, 2u, 6u, 6u, 5u, 1u  // Prawo
+        0u, 1u, 2u, 2u, 3u, 0u,
+        4u, 5u, 6u, 6u, 7u, 4u,
+        0u, 1u, 5u, 5u, 4u, 0u,
+        2u, 3u, 7u, 7u, 6u, 2u,
+        0u, 3u, 7u, 7u, 4u, 0u,
+        1u, 2u, 6u, 6u, 5u, 1u
     };
     unsigned int lightVAO, lightVBO, lightEBO;
     glGenVertexArrays(1, &lightVAO);
@@ -339,90 +319,73 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
-    glm::vec3 lightColor = glm::vec3(1.0f);
-
-    // Dodaj przed pêtl¹ g³ówn¹ (np. obok lightPos)
-    glm::vec3 endrodLight1 = glm::vec3(7.0f, 2.0f, 6.0f);
-    glm::vec3 endrodLight2 = glm::vec3(-7.0f, 2.0f, 6.0f);
+    // Pozycje endrodów (lamp)
+    glm::vec3 lights[5] = {
+        glm::vec3(0.0f, 1.3f, -0.1f),      // pozioma nad tarcz¹ (œrodek)
+        glm::vec3(6.9f, 2.0f, 6.0f),      // prawa œciana
+        glm::vec3(-6.9f, 2.0f, 6.0f),     // lewa œciana
+        glm::vec3(6.9f, 2.0f, 3.0f),      // prawa œciana bli¿ej
+        glm::vec3(-6.9f, 2.0f, 3.0f)      // lewa œciana bli¿ej
+    };
+    glm::vec3 colors[5] = {
+        glm::vec3(1.0f),
+        glm::vec3(1.0f),
+        glm::vec3(1.0f),
+        glm::vec3(1.0f),
+        glm::vec3(1.0f)
+    };
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         processInput(window);
-
         glClearColor(0.85f, 0.85f, 0.92f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Renderowanie Ÿród³a œwiat³a
+        // Rysowanie endrodów
         lightShader.Activate();
-        glm::mat4 lightModel = glm::mat4(1.0f);
-        lightModel = glm::translate(lightModel, lightPos);
-        lightModel = glm::scale(lightModel, glm::vec3(0.2f));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-        camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
-        glBindVertexArray(lightVAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        for (int i = 0; i < 5; i++) {
+            glm::mat4 lampModel = glm::mat4(1.0f);
+            lampModel = glm::translate(lampModel, lights[i]);
+            if (i == 0)
+                lampModel = glm::scale(lampModel, glm::vec3(1.0f, 0.2f, 0.2f)); // pozioma nad tarcz¹
+            else
+                lampModel = glm::scale(lampModel, glm::vec3(0.2f, 1.0f, 0.2f)); // pionowe na œcianach
+            glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(lampModel));
+            camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
+            glBindVertexArray(lightVAO);
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        }
 
-        // Renderowanie endrodów jako œwiat³a (np. jako bia³e pod³u¿ne prostopad³oœciany)
-        lightShader.Activate();
-        glm::mat4 endrodModel1 = glm::mat4(1.0f);
-        endrodModel1 = glm::translate(endrodModel1, endrodLight1);
-        endrodModel1 = glm::scale(endrodModel1, glm::vec3(0.2f, 1.0f, 0.2f)); // pod³u¿ny prêt
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(endrodModel1));
-        camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
-        glBindVertexArray(lightVAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-        glm::mat4 endrodModel2 = glm::mat4(1.0f);
-        endrodModel2 = glm::translate(endrodModel2, endrodLight2);
-        endrodModel2 = glm::scale(endrodModel2, glm::vec3(0.2f, 1.0f, 0.2f));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(endrodModel2));
-        camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
-        glBindVertexArray(lightVAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-        // Renderowanie pokoju (œcian, pod³ogi, sufitu)
+        // Przekazanie pozycji i kolorów do shaderów sceny
         shader.Activate();
         camera.Matrix(45.0f, 0.1f, 100.0f, shader, "cameraMatrix");
-        glUniform3fv(glGetUniformLocation(shader.ID, "lightPos"), 1, glm::value_ptr(lightPos));
+        glUniform1i(glGetUniformLocation(shader.ID, "numLights"), 5);
+        glUniform3fv(glGetUniformLocation(shader.ID, "lightPositions"), 5, glm::value_ptr(lights[0]));
+        glUniform3fv(glGetUniformLocation(shader.ID, "lightColors"), 5, glm::value_ptr(colors[0]));
         glUniform3fv(glGetUniformLocation(shader.ID, "viewPos"), 1, glm::value_ptr(camera.Position));
-        glUniform3fv(glGetUniformLocation(shader.ID, "lightColor"), 1, glm::value_ptr(lightColor));
+
         glm::mat4 roomM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(roomM));
         glBindVertexArray(roomVAO);
-
-        // Pod³oga (indeksy 0-5) - dywan
         glBindTexture(GL_TEXTURE_2D, texCarpet);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
-
-        // Sufit (indeksy 6-11) - drewno
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
-
-        // Œciana tylna (indeksy 12-17) - wall.jpg
         glBindTexture(GL_TEXTURE_2D, texWall);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(12 * sizeof(unsigned int)));
-
-        // Œciana przednia (indeksy 18-23) - wall.jpg
         glBindTexture(GL_TEXTURE_2D, texWall);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(18 * sizeof(unsigned int)));
-
-        // Œciana lewa (indeksy 24-29) - drewno
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(24 * sizeof(unsigned int)));
-
-        // Œciana prawa (indeksy 30-35) - drewno
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(30 * sizeof(unsigned int)));
 
-        // Renderowanie œciany
         glm::mat4 wallM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(wallM));
         glBindTexture(GL_TEXTURE_2D, texWall);
         glBindVertexArray(wallVAO);
         glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
-        // Renderowanie tarczy
         glm::mat4 dartboardModel = glm::mat4(1.0f);
         dartboardModel = glm::translate(dartboardModel, glm::vec3(0.0f, 0.0f, -wallDepth + thickness / 2));
         dartboardModel = glm::scale(dartboardModel, glm::vec3(scale));
@@ -431,18 +394,20 @@ int main() {
         glBindVertexArray(dartVAO);
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 
-        // Renderowanie komody
-        shader.Activate();
+        // Rysowanie komody z inn¹ tekstur¹ na froncie
         glm::mat4 komodaModel = glm::mat4(1.0f);
-        // Ustaw komodê na (12.0f, 0.0f,6.0f)
-        komodaModel = glm::translate(
-            komodaModel,
-            glm::vec3(6.0f, 0.0f, 0.0f)
-        );
+        komodaModel = glm::translate(komodaModel, glm::vec3(6.5f, 0, 9.0f));
+        komodaModel = glm::rotate(komodaModel, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(komodaModel));
-        glBindTexture(GL_TEXTURE_2D, texKomoda);
         glBindVertexArray(komodaVAO);
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+        // Przód komody (indeksy 0-5) z tekstur¹ Cabinet_3.jpg
+        glBindTexture(GL_TEXTURE_2D, texKomodaFront);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+
+        // Pozosta³e œciany komody z domyœln¹ tekstur¹
+        glBindTexture(GL_TEXTURE_2D, texKomoda);
+        glDrawElements(GL_TRIANGLES, 30, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
 
         glfwSwapBuffers(window);
     }
