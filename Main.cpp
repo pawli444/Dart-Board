@@ -330,7 +330,7 @@ int main() {
 
     // Pozycje Ÿróde³ œwiat³a
     glm::vec3 lights[5] = {
-        glm::vec3(0.0f, 1.3f, -0.1f),      // Œrodek nad tarcz¹
+        glm::vec3(0.0f, 1.6f, 0.0f),      // Œrodek nad tarcz¹
         glm::vec3(6.9f, 2.0f, 6.0f),       // Prawa œciana
         glm::vec3(-6.9f, 2.0f, 6.0f),      // Lewa œciana
         glm::vec3(6.9f, 2.0f, 3.0f),       // Prawa œciana bli¿ej
