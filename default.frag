@@ -49,6 +49,10 @@ void main()
         result += ambient + diffuse + specular;
     }
     
-    vec4 texColor = texture(texture1, TexCoord);
-    FragColor = vec4(texColor.rgb * result, texColor.a);
+// Emisja (jeœli chcesz dodaæ efekt glow dla materia³ów emituj¹cych œwiat³o)
+vec3 emission = vec3(0.0);
+
+// Dodaj emisjê do wyniku koñcowego
+vec4 texColor = texture(texture1, TexCoord);
+FragColor = vec4(texColor.rgb * result + emission, texColor.a);
 }

@@ -69,6 +69,8 @@ int main() {
     gladLoadGL();
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE); // renderowanie obu stron
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Shader shader("default.vert", "default.frag");
     Shader lightShader("Light.vert", "Light.frag");
@@ -334,13 +336,15 @@ int main() {
         glm::vec3(6.9f, 2.0f, 3.0f),       // Prawa œciana bli¿ej
         glm::vec3(-6.9f, 2.0f, 3.0f)       // Lewa œciana bli¿ej
     };
+
     glm::vec3 colors[5] = {
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),       // Niebieski kolor dla lampy nad tarcz¹
+        glm::vec3(1.0f, 1.0f, 1.0f),       // Bia³e œwiat³o dla pozosta³ych lamp
         glm::vec3(1.0f, 1.0f, 1.0f),
         glm::vec3(1.0f, 1.0f, 1.0f),
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
+
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -348,7 +352,7 @@ int main() {
         glClearColor(0.85f, 0.85f, 0.92f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Rysowanie endrodów
+        // Rysowanie lamp
         lightShader.Activate();
         for (int i = 0; i < 5; i++) {
             glm::mat4 lampModel = glm::mat4(1.0f);
@@ -359,9 +363,12 @@ int main() {
                 lampModel = glm::scale(lampModel, glm::vec3(0.2f, 1.0f, 0.2f)); // pionowe na œcianach
             glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(lampModel));
             camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
+            // Przekazanie koloru œwiat³a
+            glUniform3fv(glGetUniformLocation(lightShader.ID, "lightColor"), 1, glm::value_ptr(colors[i]));
             glBindVertexArray(lightVAO);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
+
 
         // Przekazanie pozycji i kolorów do shaderów sceny
         shader.Activate();
