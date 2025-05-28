@@ -9,7 +9,7 @@ in vec3 FragPos;
 uniform sampler2D texture1;
 uniform vec3 viewPos;
 
-#define MAX_LIGHTS 5
+#define MAX_LIGHTS 10 // Mo¿esz zwiêkszyæ maksymaln¹ liczbê œwiate³
 uniform int numLights;
 uniform vec3 lightPositions[MAX_LIGHTS];
 uniform vec3 lightColors[MAX_LIGHTS];
@@ -22,16 +22,32 @@ void main()
     float shininess = 32.0;
     
     for (int i = 0; i < numLights; i++) {
-        vec3 ambient = 0.2 * lightColors[i];
+        // Ambient
+        vec3 ambient = 0.3 * lightColors[i]; // Zwiêkszona wartoœæ ambient
+        
+        // Diffuse
         vec3 lightDir = normalize(lightPositions[i] - FragPos);
         float diff = max(dot(norm, lightDir), 0.0);
         vec3 diffuse = diff * lightColors[i];
+        
+        // Specular
         vec3 reflectDir = reflect(-lightDir, norm);
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
         vec3 specular = spec * lightColors[i];
+        
+        // Atenuacja
+        float distance = length(lightPositions[i] - FragPos);
+        float constant = 1.0;
+        float linear = 0.09;
+        float quadratic = 0.032;
+        float attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+        
+        ambient *= attenuation;
+        diffuse *= attenuation;
+        specular *= attenuation;
+        
         result += ambient + diffuse + specular;
     }
-    result /= float(numLights);
     
     vec4 texColor = texture(texture1, TexCoord);
     FragColor = vec4(texColor.rgb * result, texColor.a);

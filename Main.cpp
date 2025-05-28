@@ -257,22 +257,27 @@ int main() {
     // Komoda
     float komodaW = 4.0f, komodaH = 2.0f, komodaD = 1.0f;
     float komodaVerts[] = {
-        -komodaW / 2, -roomH, -komodaD / 2, 0.0f, 0.0f,
-         komodaW / 2, -roomH, -komodaD / 2, 1.0f, 0.0f,
-         komodaW / 2, -roomH + komodaH, -komodaD / 2, 1.0f, 1.0f,
-        -komodaW / 2, -roomH + komodaH, -komodaD / 2, 0.0f, 1.0f,
-        -komodaW / 2, -roomH,  komodaD / 2, 0.0f, 0.0f,
-         komodaW / 2, -roomH,  komodaD / 2, 1.0f, 0.0f,
-         komodaW / 2, -roomH + komodaH,  komodaD / 2, 1.0f, 1.0f,
-        -komodaW / 2, -roomH + komodaH,  komodaD / 2, 0.0f, 1.0f,
+        // Przednia i tylna œciana
+        -komodaW / 2, -roomH, -komodaD / 2, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+         komodaW / 2, -roomH, -komodaD / 2, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
+         komodaW / 2, -roomH + komodaH, -komodaD / 2, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f,
+        -komodaW / 2, -roomH + komodaH, -komodaD / 2, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f,
+        // Przód
+        -komodaW / 2, -roomH,  komodaD / 2, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+         komodaW / 2, -roomH,  komodaD / 2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+         komodaW / 2, -roomH + komodaH,  komodaD / 2, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -komodaW / 2, -roomH + komodaH,  komodaD / 2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
     };
     unsigned int komodaIdx[] = {
-        0,1,2, 2,3,0,
-        4,5,6, 6,7,4,
-        0,1,5, 5,4,0,
-        2,3,7, 7,6,2,
-        0,3,7, 7,4,0,
-        1,2,6, 6,5,1
+        // Tylna œciana
+        0u, 1u, 2u, 2u, 3u, 0u,
+        // Przód
+        4u, 5u, 6u, 6u, 7u, 4u,
+        // Boki
+        0u, 1u, 5u, 5u, 4u, 0u,
+        2u, 3u, 7u, 7u, 6u, 2u,
+        0u, 3u, 7u, 7u, 4u, 0u,
+        1u, 2u, 6u, 6u, 5u, 1u
     };
     unsigned int komodaVAO, komodaVBO, komodaEBO;
     glGenVertexArrays(1, &komodaVAO);
@@ -283,10 +288,12 @@ int main() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(komodaVerts), komodaVerts, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, komodaEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(komodaIdx), komodaIdx, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // Œwiat³o (szeœcian)
     float cubeVertices[] = {
@@ -300,12 +307,12 @@ int main() {
         -0.5f,  0.5f,  0.5f
     };
     unsigned int cubeIndices[] = {
-        0u, 1u, 2u, 2u, 3u, 0u,
-        4u, 5u, 6u, 6u, 7u, 4u,
-        0u, 1u, 5u, 5u, 4u, 0u,
-        2u, 3u, 7u, 7u, 6u, 2u,
-        0u, 3u, 7u, 7u, 4u, 0u,
-        1u, 2u, 6u, 6u, 5u, 1u
+        0u, 1u, 2u, 2u, 3u, 0u, // Ty³
+        4u, 5u, 6u, 6u, 7u, 4u, // Przód
+        0u, 1u, 5u, 5u, 4u, 0u, // Dó³
+        2u, 3u, 7u, 7u, 6u, 2u, // Góra
+        0u, 3u, 7u, 7u, 4u, 0u, // Lewo
+        1u, 2u, 6u, 6u, 5u, 1u  // Prawo
     };
     unsigned int lightVAO, lightVBO, lightEBO;
     glGenVertexArrays(1, &lightVAO);
@@ -319,20 +326,20 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // Pozycje endrodów (lamp)
+    // Pozycje Ÿróde³ œwiat³a
     glm::vec3 lights[5] = {
-        glm::vec3(0.0f, 1.3f, -0.1f),      // pozioma nad tarcz¹ (œrodek)
-        glm::vec3(6.9f, 2.0f, 6.0f),      // prawa œciana
-        glm::vec3(-6.9f, 2.0f, 6.0f),     // lewa œciana
-        glm::vec3(6.9f, 2.0f, 3.0f),      // prawa œciana bli¿ej
-        glm::vec3(-6.9f, 2.0f, 3.0f)      // lewa œciana bli¿ej
+        glm::vec3(0.0f, 1.3f, -0.1f),      // Œrodek nad tarcz¹
+        glm::vec3(6.9f, 2.0f, 6.0f),       // Prawa œciana
+        glm::vec3(-6.9f, 2.0f, 6.0f),      // Lewa œciana
+        glm::vec3(6.9f, 2.0f, 3.0f),       // Prawa œciana bli¿ej
+        glm::vec3(-6.9f, 2.0f, 3.0f)       // Lewa œciana bli¿ej
     };
     glm::vec3 colors[5] = {
-        glm::vec3(1.0f),
-        glm::vec3(1.0f),
-        glm::vec3(1.0f),
-        glm::vec3(1.0f),
-        glm::vec3(1.0f)
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
     while (!glfwWindowShouldClose(window)) {
@@ -364,6 +371,7 @@ int main() {
         glUniform3fv(glGetUniformLocation(shader.ID, "lightColors"), 5, glm::value_ptr(colors[0]));
         glUniform3fv(glGetUniformLocation(shader.ID, "viewPos"), 1, glm::value_ptr(camera.Position));
 
+        // Renderowanie pokoju
         glm::mat4 roomM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(roomM));
         glBindVertexArray(roomVAO);
@@ -380,12 +388,14 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(30 * sizeof(unsigned int)));
 
+        // Renderowanie œciany
         glm::mat4 wallM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(wallM));
         glBindTexture(GL_TEXTURE_2D, texWall);
         glBindVertexArray(wallVAO);
         glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
+        // Renderowanie tarczy
         glm::mat4 dartboardModel = glm::mat4(1.0f);
         dartboardModel = glm::translate(dartboardModel, glm::vec3(0.0f, 0.0f, -wallDepth + thickness / 2));
         dartboardModel = glm::scale(dartboardModel, glm::vec3(scale));
@@ -394,14 +404,14 @@ int main() {
         glBindVertexArray(dartVAO);
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 
-        // Rysowanie komody z inn¹ tekstur¹ na froncie
+        // Renderowanie komody z inn¹ tekstur¹ na froncie
         glm::mat4 komodaModel = glm::mat4(1.0f);
         komodaModel = glm::translate(komodaModel, glm::vec3(6.5f, 0, 9.0f));
         komodaModel = glm::rotate(komodaModel, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(komodaModel));
         glBindVertexArray(komodaVAO);
 
-        // Przód komody (indeksy 0-5) z tekstur¹ Cabinet_3.jpg
+        // Przód komody (indeksy 0-5) z tekstur¹ przod_komody.png
         glBindTexture(GL_TEXTURE_2D, texKomodaFront);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
 
@@ -412,6 +422,7 @@ int main() {
         glfwSwapBuffers(window);
     }
 
+    // Czyszczenie zasobów
     glDeleteVertexArrays(1, &dartVAO);
     glDeleteBuffers(1, &dartVBO);
     glDeleteBuffers(1, &dartEBO);
@@ -429,6 +440,10 @@ int main() {
     glDeleteBuffers(1, &lightEBO);
     glDeleteTextures(1, &texWall);
     glDeleteTextures(1, &texDartboard);
+    glDeleteTextures(1, &texWallSide);
+    glDeleteTextures(1, &texCarpet);
+    glDeleteTextures(1, &texKomoda);
+    glDeleteTextures(1, &texKomodaFront);
     shader.Delete();
     lightShader.Delete();
     glfwTerminate();
