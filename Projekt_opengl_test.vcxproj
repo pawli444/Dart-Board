@@ -71,8 +71,20 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\pawli\source\OpenGL\Biblioteki\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\pawli\source\OpenGL\Biblioteki\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\OpenGL-lib\include;C:\Users\pawli\source\OpenGL\Biblioteki\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\OpenGL-lib\lib;C:\Users\pawli\source\OpenGL\Biblioteki\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>C:\OpenGL-lib\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>C:\OpenGL-lib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\OpenGL-lib\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>C:\OpenGL-lib\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\OpenGL-lib\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>C:\OpenGL-lib\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -142,7 +154,6 @@
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="VAO.cpp" />
     <ClCompile Include="VBO.cpp" />
-    <ClCompile Include="Źródło.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="aAAAAAAAAAAAAAAAAAAAAAAAA.h" />
@@ -160,11 +171,14 @@
     <None Include="default.vert" />
     <None Include="Light.frag" />
     <None Include="Light.vert" />
+    <None Include="postprocessing.vert" />
+    <None Include="sharpening.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\Downloads\dartboard-no-back.png" />
     <Image Include="..\..\..\Downloads\dartboard.png" />
-    <Image Include="..\..\..\Downloads\wall.png" />
+    <Image Include="..\..\..\Downloads\sciana_drewno.png" />
+    <Image Include="..\opengel\opengel\wall.jpg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
