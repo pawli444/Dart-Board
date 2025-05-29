@@ -63,7 +63,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Dartboard Scene with Light", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Dartboard Scene with Light and Post-Processing", NULL, NULL);
     if (!window) { std::cout << "GLFW init fail\n"; glfwTerminate(); return -1; }
     glfwMakeContextCurrent(window);
     gladLoadGL();
@@ -72,8 +72,63 @@ int main() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    // Shadery
     Shader shader("default.vert", "default.frag");
     Shader lightShader("Light.vert", "Light.frag");
+
+    // Framebuffer dla post-processingu
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    // Tekstura koloru
+    unsigned int textureColorbuffer;
+    glGenTextures(1, &textureColorbuffer);
+    glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+
+    // Renderbuffer dla g³êbokoœci
+    unsigned int rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Prostok¹t pe³noekranowy
+    float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+
+    unsigned int quadVAO, quadVBO;
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+    // Shader post-processingu (wyostrzanie)
+    Shader postShader("postprocessing.vert", "sharpening.frag");
+    postShader.Activate();
+    postShader.setInt("screenTexture", 0);
+
     shader.Activate();
     shader.setInt("texture1", 0);
 
@@ -345,10 +400,14 @@ int main() {
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
-
+    // --- Pêtla g³ówna ---
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         processInput(window);
+
+        // 1. Renderuj scenê do framebuffera
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+        glEnable(GL_DEPTH_TEST);
         glClearColor(0.85f, 0.85f, 0.92f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -358,19 +417,17 @@ int main() {
             glm::mat4 lampModel = glm::mat4(1.0f);
             lampModel = glm::translate(lampModel, lights[i]);
             if (i == 0)
-                lampModel = glm::scale(lampModel, glm::vec3(1.0f, 0.2f, 0.2f)); // pozioma nad tarcz¹
+                lampModel = glm::scale(lampModel, glm::vec3(1.0f, 0.2f, 0.2f));
             else
-                lampModel = glm::scale(lampModel, glm::vec3(0.2f, 1.0f, 0.2f)); // pionowe na œcianach
+                lampModel = glm::scale(lampModel, glm::vec3(0.2f, 1.0f, 0.2f));
             glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(lampModel));
             camera.Matrix(45.0f, 0.1f, 100.0f, lightShader, "cameraMatrix");
-            // Przekazanie koloru œwiat³a
             glUniform3fv(glGetUniformLocation(lightShader.ID, "lightColor"), 1, glm::value_ptr(colors[i]));
             glBindVertexArray(lightVAO);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
 
-
-        // Przekazanie pozycji i kolorów do shaderów sceny
+        // Rysowanie sceny (pokój, œciany, tarcza, komoda)
         shader.Activate();
         camera.Matrix(45.0f, 0.1f, 100.0f, shader, "cameraMatrix");
         glUniform1i(glGetUniformLocation(shader.ID, "numLights"), 5);
@@ -378,7 +435,7 @@ int main() {
         glUniform3fv(glGetUniformLocation(shader.ID, "lightColors"), 5, glm::value_ptr(colors[0]));
         glUniform3fv(glGetUniformLocation(shader.ID, "viewPos"), 1, glm::value_ptr(camera.Position));
 
-        // Renderowanie pokoju
+        // Pokój
         glm::mat4 roomM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(roomM));
         glBindVertexArray(roomVAO);
@@ -395,14 +452,14 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(30 * sizeof(unsigned int)));
 
-        // Renderowanie œciany
+        // Œciana
         glm::mat4 wallM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(wallM));
         glBindTexture(GL_TEXTURE_2D, texWall);
         glBindVertexArray(wallVAO);
         glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
 
-        // Renderowanie tarczy
+        // Tarcza
         glm::mat4 dartboardModel = glm::mat4(1.0f);
         dartboardModel = glm::translate(dartboardModel, glm::vec3(0.0f, 0.0f, -wallDepth + thickness / 2));
         dartboardModel = glm::scale(dartboardModel, glm::vec3(scale));
@@ -411,25 +468,33 @@ int main() {
         glBindVertexArray(dartVAO);
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 
-        // Renderowanie komody z inn¹ tekstur¹ na froncie
+        // Komoda
         glm::mat4 komodaModel = glm::mat4(1.0f);
         komodaModel = glm::translate(komodaModel, glm::vec3(6.5f, 0, 9.0f));
         komodaModel = glm::rotate(komodaModel, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(komodaModel));
         glBindVertexArray(komodaVAO);
-
-        // Przód komody (indeksy 0-5) z tekstur¹ przod_komody.png
         glBindTexture(GL_TEXTURE_2D, texKomodaFront);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
-
-        // Pozosta³e œciany komody z domyœln¹ tekstur¹
         glBindTexture(GL_TEXTURE_2D, texKomoda);
         glDrawElements(GL_TRIANGLES, 30, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
+
+        // 2. Post-processing: rysuj quad na ekranie
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        postShader.Activate();
+        glBindVertexArray(quadVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glEnable(GL_DEPTH_TEST);
 
         glfwSwapBuffers(window);
     }
 
-    // Czyszczenie zasobów
+    // --- Sprz¹tanie zasobów ---
     glDeleteVertexArrays(1, &dartVAO);
     glDeleteBuffers(1, &dartVBO);
     glDeleteBuffers(1, &dartEBO);
@@ -451,8 +516,12 @@ int main() {
     glDeleteTextures(1, &texCarpet);
     glDeleteTextures(1, &texKomoda);
     glDeleteTextures(1, &texKomodaFront);
+    glDeleteFramebuffers(1, &framebuffer);
+    glDeleteTextures(1, &textureColorbuffer);
+    glDeleteRenderbuffers(1, &rbo);
     shader.Delete();
     lightShader.Delete();
+    postShader.Delete();
     glfwTerminate();
     return 0;
 }

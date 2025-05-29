@@ -171,6 +171,8 @@
     <None Include="default.vert" />
     <None Include="Light.frag" />
     <None Include="Light.vert" />
+    <None Include="postprocessing.vert" />
+    <None Include="sharpening.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\Downloads\dartboard-no-back.png" />
