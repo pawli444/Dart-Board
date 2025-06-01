@@ -6,30 +6,38 @@
 
 #include "shaderClass.h"
 #include "Camera.h"
+
+#include <vector>
+#include <iostream>
+#include <cmath>
 #include "stb_image.h"
 
-#include <iostream>
-#include <vector>
-#include <cmath>
-#include <algorithm>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
+#include "Model.h"
+
+//Stale potrzebne do 
+const double M_PI = 3.14159265358979323846;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 800;
-const double M_PI = 3.14159265358979323846;
-
-Camera camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 12.0f));
+//Zainicjalizowanie kamery 
+Camera camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.3f, 5.5f));
 float scale = 1.0f;
 
-void processInput(GLFWwindow* window)
-{
+//Zmiana skali 
+void processInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
         scale -= 0.01f;
     if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
         scale += 0.01f;
-    scale = std::max(0.1f, std::min(scale, 5.0f));
-    camera.Inputs(window);
+
+    if (scale < 0.1f) scale = 0.1f;
+    if (scale > 5.0f) scale = 5.0f;
 }
 
+//Funkcja do ladowania tekstur
 unsigned int loadTexture(const char* path)
 {
     unsigned int textureID;
@@ -49,6 +57,7 @@ unsigned int loadTexture(const char* path)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         stbi_image_free(data);
+        std::cout << "Poprawne loadowanie: " << path << std::endl;
     }
     else
     {
@@ -59,22 +68,33 @@ unsigned int loadTexture(const char* path)
 }
 
 int main() {
+    //Standardowy setup okna glfw 
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Dartboard Scene with Light and Post-Processing", NULL, NULL);
-    if (!window) { std::cout << "GLFW init fail\n"; glfwTerminate(); return -1; }
+
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Dartboard", NULL, NULL);
+    if (!window) {
+        std::cout << "Failed to create GLFW window\n";
+        glfwTerminate();
+        return -1;
+    }
     glfwMakeContextCurrent(window);
     gladLoadGL();
+
     glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE); // renderowanie obu stron
+    glDisable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Shadery
+
+    //Dodanie shaderow zwyklego i swiatla 
     Shader shader("default.vert", "default.frag");
     Shader lightShader("Light.vert", "Light.frag");
+
+    //Dodanie modelu lotki 
+    Model dart("dart.obj");
 
     // Framebuffer dla post-processingu
     unsigned int framebuffer;
@@ -400,10 +420,19 @@ int main() {
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
-    // --- Pêtla g³ówna ---
+    //umozliwia rotacje wokol wlasnej osi lotki
+    float dartRotation = 0.0f;
+    float dartFlight = 5.000001f; //leci sobie do tarczy 
+    bool dartShouldFly = false; //czy lotka ma leciec 
+
+
     while (!glfwWindowShouldClose(window)) {
+        //Zaczecie typowe
         glfwPollEvents();
         processInput(window);
+
+
+        camera.Inputs(window);  //Zostawic ??
 
         // 1. Renderuj scenê do framebuffera
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -426,35 +455,47 @@ int main() {
             glBindVertexArray(lightVAO);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
-
-        // Rysowanie sceny (pokój, œciany, tarcza, komoda)
+        shader.setBool("useTexture", true);
+        // Rysowanie sceny (pokój, œciany, tarcza, komoda)  
         shader.Activate();
         camera.Matrix(45.0f, 0.1f, 100.0f, shader, "cameraMatrix");
         glUniform1i(glGetUniformLocation(shader.ID, "numLights"), 5);
-        glUniform3fv(glGetUniformLocation(shader.ID, "lightPositions"), 5, glm::value_ptr(lights[0]));
-        glUniform3fv(glGetUniformLocation(shader.ID, "lightColors"), 5, glm::value_ptr(colors[0]));
+        glUniform3fv(glGetUniformLocation(shader.ID, "lightPositions"), 5, &lights[0].x);
+        glUniform3fv(glGetUniformLocation(shader.ID, "lightColors"), 5, &colors[0].x);
         glUniform3fv(glGetUniformLocation(shader.ID, "viewPos"), 1, glm::value_ptr(camera.Position));
 
         // Pokój
         glm::mat4 roomM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(roomM));
         glBindVertexArray(roomVAO);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texCarpet);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
+
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texWall);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(12 * sizeof(unsigned int)));
+
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texWall);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(18 * sizeof(unsigned int)));
+
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(24 * sizeof(unsigned int)));
+
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texWallSide);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(30 * sizeof(unsigned int)));
 
         // Œciana
         glm::mat4 wallM = glm::mat4(1.0f);
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(wallM));
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texWall);
         glBindVertexArray(wallVAO);
         glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
@@ -464,6 +505,7 @@ int main() {
         dartboardModel = glm::translate(dartboardModel, glm::vec3(0.0f, 0.0f, -wallDepth + thickness / 2));
         dartboardModel = glm::scale(dartboardModel, glm::vec3(scale));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(dartboardModel));
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texDartboard);
         glBindVertexArray(dartVAO);
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
@@ -474,11 +516,89 @@ int main() {
         komodaModel = glm::rotate(komodaModel, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(komodaModel));
         glBindVertexArray(komodaVAO);
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texKomodaFront);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(0 * sizeof(unsigned int)));
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texKomoda);
         glDrawElements(GL_TRIANGLES, 30, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
 
+        
+
+        //Animacja podazania kamery za lotka
+        glm::vec3 dartPosition = glm::vec3(0.0f, 0.0f, dartFlight);
+        glm::vec3 cameraOffset = glm::vec3(2.0f, 2.0f, 4.0f); // dostosuj wed³ug uznania
+        camera.FollowTarget(dartPosition, cameraOffset);
+
+
+        //Wylaczenie tesktury na czas rysowania lotki 
+        shader.setBool("useTexture", false);
+        shader.setVec3("overrideColor", glm::vec3(0.0f, 0.0f, 1.0f)); // czerwony
+
+
+        //Renderowanie lotki 
+        glm::mat4 dartTransform = glm::mat4(1.0f);
+        dartTransform = glm::translate(dartTransform, glm::vec3(0.0f, 0.0f, dartFlight));
+        if (dartFlight > 0.0f && dartFlight < 5.0f) {
+            dartTransform = glm::rotate(dartTransform, glm::radians(dartRotation), glm::vec3(0.0f, 0.0f, 1.0f));
+        }
+        dartTransform = glm::scale(dartTransform, glm::vec3(0.05f)); // dostosuj skalê
+
+        int modelLoc1 = glGetUniformLocation(shader.ID, "model");
+        glUniformMatrix4fv(modelLoc1, 1, GL_FALSE, glm::value_ptr(dartTransform));
+
+        dart.Draw(shader);
+
+        shader.Activate();
+        camera.Matrix(45.0f, 0.1f, 100.0f, shader, "cameraMatrix");
+        shader.setBool("useTexture", true);
+        shader.setInt("texture1", 0);
+        glActiveTexture(GL_TEXTURE0);
+
+        glUniform3fv(glGetUniformLocation(shader.ID, "viewPos"), 1, glm::value_ptr(camera.Position));
+        glUniform1i(glGetUniformLocation(shader.ID, "numLights"), 5);
+        glUniform3fv(glGetUniformLocation(shader.ID, "lightPositions"), 5, &lights[0].x);
+        glUniform3fv(glGetUniformLocation(shader.ID, "lightColors"), 5, &colors[0].x);
+ 
+
+        //Przed zamiana okna i ponownym rysowaniu zmienia o 1 stopien kat obortu lotki 
+        if (dartFlight > 4.8f && dartFlight < 5.0) {
+            dartRotation += 0.1f;
+        }
+        else if (dartFlight > 4.5f && dartFlight < 5.0) {
+            dartRotation += 0.2f;
+        }
+        else if (dartFlight > 4.0f && dartFlight < 5.0) {
+            dartRotation += 0.3f;
+        }
+        else if (dartFlight > 3.5f && dartFlight < 5.0) {
+            dartRotation += 0.4f;
+        }
+        else {
+            dartRotation += 0.5f;
+        }
+        if (dartRotation >= 360.0f) dartRotation -= 360.0f; //jesli dojdzie do 360 wraca do zera 
+        
+        //Sprawdzenie czy dalej ma leciec 
+        if (dartShouldFly && dartFlight > -0.1f) {
+            dartFlight -= 0.005f;
+        }
+        if (dartFlight <= -0.1f) {
+            dartFlight = -0.1f;
+            dartShouldFly = false; // Zatrzymaj ruch po dotarciu do tarczy
+        }
+
+        //Dodanie resetowania lotu lotki 
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+            dartShouldFly = false;
+            dartFlight = 5.000001f;
+            dartRotation = 0.0f;
+        }
+
+        // Uruchom lotkê przy naciœniêciu spacji
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            dartShouldFly = true;
+        
         // 2. Post-processing: rysuj quad na ekranie
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glDisable(GL_DEPTH_TEST);
